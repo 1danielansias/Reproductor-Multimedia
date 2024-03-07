@@ -31,6 +31,10 @@ public class Reproductor {
         return status;
     }
 
+    public int getArchivoCargadoIndex() {
+        return archivoCargadoIndex;
+    }
+
     public void setListaArchivos(ListaArchivos nuevaListaArchivos) {
         this.listaArchivos = nuevaListaArchivos;
     }
@@ -44,8 +48,10 @@ public class Reproductor {
      */
     public void prepare() {
         if (!listaArchivos.getLista().isEmpty()) {
-            archivoCargadoIndex = 0;
-            status = "OKAY";
+            if (status.equals("NOT_READY")) {
+                archivoCargadoIndex = 0;
+                status = "OKAY";
+            }
         } else {
             status = "NOT_READY";
         }
@@ -63,16 +69,26 @@ public class Reproductor {
     public void play(boolean next, boolean aleatorio, boolean previous) throws ReproductorException {
         Multimedia multimedia = getMultimedia(next, aleatorio, previous);
         if (multimedia != null) {
-            Media media = new Media(multimedia.getURL());
-            if (mediaPlayer != null) {
-                mediaPlayer.stop();
+            if (status.equals("PAUSED") && !next) {
+                mediaPlayer.play();
+                status = "PLAYING";
+            } else {
+                Media media = new Media(multimedia.getURL());
+                if (mediaPlayer != null) {
+                    mediaPlayer.stop();
+                }
+                mediaPlayer = new MediaPlayer(media);
+
+                mediaPlayer.setOnReady(() -> {
+                    mediaPlayer.setAutoPlay(true);
+                });
+
+                mediaView.setMediaPlayer(mediaPlayer);
+
+                status = "PLAYING";
+                archivoCargadoIndex = listaArchivos.getLista().indexOf(multimedia);
+                addMediaPlayerListener();
             }
-            mediaPlayer = new MediaPlayer(media);
-            mediaView.setMediaPlayer(mediaPlayer);
-            mediaPlayer.play();
-            status = "PLAYING";
-            archivoCargadoIndex = listaArchivos.getLista().indexOf(multimedia);
-            addMediaPlayerListener();
         } else {
             throw new ReproductorException("No se pudo obtener el multimedia para reproducir.");
         }
@@ -102,6 +118,26 @@ public class Reproductor {
     }
 
     /**
+     * Pausa la reproducción del multimedia.
+     */
+    public void pause() {
+        if (mediaPlayer != null && mediaPlayer.getStatus() == MediaPlayer.Status.PLAYING) {
+            mediaPlayer.pause();
+            status = "PAUSED";
+        }
+    }
+
+    /**
+     * Detiene la reproducción del multimedia y la reinicia.
+     */
+    public void stop() {
+        if (mediaPlayer != null) {
+            mediaPlayer.stop();
+            status = "STOPPED";
+        }
+    }
+
+    /**
      * Restablece el estado del reproductor a su estado inicial.
      */
     public void reset() {
@@ -118,10 +154,10 @@ public class Reproductor {
             mediaView.setMediaPlayer(null);
         }
     }
-    
+
     /**
-     * Añade un ChangeListener al estado de reproducción del MediaPlayer para pasar al siguiente
-     * multimedia cuando el actual termine de reproducirse.
+     * Añade un ChangeListener al estado de reproducción del MediaPlayer para
+     * pasar al siguiente multimedia cuando el actual termine de reproducirse.
      */
     private void addMediaPlayerListener() {
         mediaPlayer.setOnEndOfMedia(() -> {
@@ -141,14 +177,29 @@ public class Reproductor {
         });
     }
 
+    /**
+     * Añade un archivo a la lista multimedia.
+     *
+     * @param file El archivo a añadir.
+     */
     public void agregarArchivo(File file) {
         listaArchivos.agregarArchivo(file);
     }
 
+    /**
+     * Elimina un archivo de la lista multimedia.
+     *
+     * @param multimedia El multimedia a eliminar.
+     */
     public void eliminarArchivo(Multimedia multimedia) {
         listaArchivos.eliminarArchivo(multimedia);
     }
 
+    /**
+     * Devuelve la lista multimedia.
+     *
+     * @return La lista multimedia.
+     */
     public ArrayList<Multimedia> getLista() {
         return listaArchivos.getLista();
     }
