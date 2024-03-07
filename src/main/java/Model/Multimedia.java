@@ -4,6 +4,8 @@
  */
 package Model;
 
+import java.io.File;
+
 /**
  * Clase padre que representa diferentes archivos multimedia.
  * 
@@ -12,9 +14,11 @@ package Model;
 public class Multimedia {
     
     private String nombre;
+    private File fichero;
     private double duracion;
     private String rutaFichero;
     private String extension;
+    private String url;
     
     public Multimedia() {
     }
@@ -23,6 +27,8 @@ public class Multimedia {
         this.nombre = nombre;
         this.rutaFichero = rutaFichero;
         this.extension = extension;
+        this.fichero = new File(rutaFichero);
+        this.url = fichero.toURI().toString();
     }
     
     public Multimedia(double duracion, String rutaFichero, String extension) {
@@ -62,5 +68,16 @@ public class Multimedia {
     public void setRutaFichero(String rutaFichero) {
         this.rutaFichero = rutaFichero;
     }
+
+    public File getFichero() {
+        return fichero;
+    }
+
+    public void setFichero(File fichero) {
+        this.fichero = fichero;
+    }
     
+    public String getURL() {
+        return url;
+    }
 }

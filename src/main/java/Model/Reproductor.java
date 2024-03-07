@@ -1,9 +1,10 @@
 package Model;
 
+import java.io.File;
 import java.util.ArrayList;
-import java.util.Random;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
+import javafx.scene.media.MediaView;
 
 /**
  * Clase que gestiona los diferentes eventos de reproducción del reproductor.
@@ -14,112 +15,134 @@ public class Reproductor {
 
     private ListaArchivos listaArchivos;
     private MediaPlayer mediaPlayer;
-    private Multimedia archivoActual;
-    private boolean reproduciendo;
+    private MediaView mediaView;
+    private int archivoCargadoIndex;
     private boolean reproduccionAleatoria;
+    private String status;
 
     public Reproductor() {
         listaArchivos = new ListaArchivos();
-        reproduciendo = false;
         reproduccionAleatoria = false;
+        archivoCargadoIndex = -1;
+        status = "NOT_READY";
     }
 
-    public void reproducir(Multimedia multimedia) throws ReproductorException {
-        if (multimedia == null) {
-            throw new ReproductorException("El objeto Multimedia es nulo");
+    public String getStatus() {
+        return status;
+    }
+
+    public void setListaArchivos(ListaArchivos nuevaListaArchivos) {
+        this.listaArchivos = nuevaListaArchivos;
+    }
+
+    public void setMediaView(MediaView mediaView) {
+        this.mediaView = mediaView;
+    }
+
+    /**
+     * Prepara el reproductor para la reproducción.
+     */
+    public void prepare() {
+        if (!listaArchivos.getLista().isEmpty()) {
+            archivoCargadoIndex = 0;
+            status = "OKAY";
+        } else {
+            status = "NOT_READY";
         }
+    }
 
-        archivoActual = multimedia;
-        reproduciendo = true;
+    /**
+     * Reproduce un multimedia dado por la lista según los parámetros
+     * configurados.
+     *
+     * @param next Siguiente activado.
+     * @param aleatorio Aleatorio activado.
+     * @param previous Anterior activado.
+     * @throws ReproductorException Excepcion al cargar el media a reproducir.
+     */
+    public void play(boolean next, boolean aleatorio, boolean previous) throws ReproductorException {
+        Multimedia multimedia = getMultimedia(next, aleatorio, previous);
+        if (multimedia != null) {
+            Media media = new Media(multimedia.getURL());
+            if (mediaPlayer != null) {
+                mediaPlayer.stop();
+            }
+            mediaPlayer = new MediaPlayer(media);
+            mediaView.setMediaPlayer(mediaPlayer);
+            mediaPlayer.play();
+            status = "PLAYING";
+            archivoCargadoIndex = listaArchivos.getLista().indexOf(multimedia);
+            addMediaPlayerListener();
+        } else {
+            throw new ReproductorException("No se pudo obtener el multimedia para reproducir.");
+        }
+    }
 
-        String ruta = multimedia.getRutaFichero();
-        Media media = new Media(ruta);
+    /**
+     * Obtiene un Objeto Multimedia de la lista.
+     *
+     * @param next Siguiente activado.
+     * @param aleatorio Aleatorio activado
+     * @return Objeto multimedia, null si no se pudo obtener.
+     */
+    private Multimedia getMultimedia(boolean next, boolean aleatorio, boolean previous) {
+        if (!listaArchivos.getLista().isEmpty()) {
+            if (previous) {
+                return listaArchivos.getAnterior(archivoCargadoIndex);
+            }
+            if (next && !aleatorio) {
+                return listaArchivos.getSiguiente(archivoCargadoIndex);
+            } else if (aleatorio) {
+                return listaArchivos.getRandom();
+            } else {
+                return listaArchivos.getLista().get(archivoCargadoIndex);
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Restablece el estado del reproductor a su estado inicial.
+     */
+    public void reset() {
+        listaArchivos = new ListaArchivos();
+        reproduccionAleatoria = false;
+        archivoCargadoIndex = -1;
+        status = "NOT_READY";
         if (mediaPlayer != null) {
             mediaPlayer.stop();
+            mediaPlayer.dispose();
+            mediaPlayer = null;
         }
-        mediaPlayer = new MediaPlayer(media);
-        mediaPlayer.play();
-        reproduciendo = true;
-
-        // Listener para detectar el fin de la reproducción
+        if (mediaView != null) {
+            mediaView.setMediaPlayer(null);
+        }
+    }
+    
+    /**
+     * Añade un ChangeListener al estado de reproducción del MediaPlayer para pasar al siguiente
+     * multimedia cuando el actual termine de reproducirse.
+     */
+    private void addMediaPlayerListener() {
         mediaPlayer.setOnEndOfMedia(() -> {
-            try {
-                if (reproduccionAleatoria) {
-                    reproducirAleatorio();
-                } else {
-                    siguiente();
+            if (reproduccionAleatoria) {
+                try {
+                    play(true, true, false);
+                } catch (ReproductorException e) {
+                    e.printStackTrace();
                 }
-            } catch (ReproductorException e) {
-                System.out.println("Error al reproducir el siguiente archivo: " + e.getMessage());
+            } else {
+                try {
+                    play(true, false, false);
+                } catch (ReproductorException e) {
+                    e.printStackTrace();
+                }
             }
         });
     }
 
-    public void reproducirAleatorio() throws ReproductorException {
-        ArrayList<Multimedia> archivos = listaArchivos.getLista();
-        if (archivos == null || archivos.isEmpty()) {
-            throw new ReproductorException("No hay archivos multimedia para reproducir aleatoriamente");
-        }
-
-        Random random = new Random();
-        int index = random.nextInt(archivos.size());
-        reproducir(archivos.get(index));
-    }
-
-    public void pausar() {
-        if (mediaPlayer != null && reproduciendo) {
-            mediaPlayer.pause();
-            reproduciendo = false;
-        }
-    }
-
-    public void detener() {
-        if (mediaPlayer != null && reproduciendo) {
-            mediaPlayer.stop();
-            reproduciendo = false;
-        }
-    }
-
-    public void siguiente() throws ReproductorException {
-        ArrayList<Multimedia> archivos = listaArchivos.getLista();
-        if (archivos == null || archivos.isEmpty()) {
-            throw new ReproductorException("No hay archivos multimedia para reproducir");
-        }
-
-        if (reproduccionAleatoria) {
-            reproducirAleatorio();
-        } else {
-            int index = archivos.indexOf(archivoActual);
-            if (index == -1) {
-                throw new ReproductorException("No se puede encontrar el archivo actual en la lista");
-            }
-
-            int siguienteIndex = (index + 1) % archivos.size();
-            reproducir(archivos.get(siguienteIndex));
-        }
-    }
-
-    public void anterior() throws ReproductorException {
-        ArrayList<Multimedia> archivos = listaArchivos.getLista();
-        if (archivos == null || archivos.isEmpty()) {
-            throw new ReproductorException("No hay archivos multimedia para reproducir");
-        }
-
-        if (reproduccionAleatoria) {
-            reproducirAleatorio();
-        } else {
-            int index = archivos.indexOf(archivoActual);
-            if (index == -1) {
-                throw new ReproductorException("No se puede encontrar el archivo actual en la lista");
-            }
-
-            int anteriorIndex = (index - 1 + archivos.size()) % archivos.size();
-            reproducir(archivos.get(anteriorIndex));
-        }
-    }
-
-    public void agregarArchivo(Multimedia multimedia) {
-        listaArchivos.agregarArchivo(multimedia);
+    public void agregarArchivo(File file) {
+        listaArchivos.agregarArchivo(file);
     }
 
     public void eliminarArchivo(Multimedia multimedia) {
@@ -129,15 +152,15 @@ public class Reproductor {
     public ArrayList<Multimedia> getLista() {
         return listaArchivos.getLista();
     }
-    
+
     public void activarReproduccionAleatoria() {
         reproduccionAleatoria = true;
     }
-    
+
     public void desactivarReproduccionAleatoria() {
         reproduccionAleatoria = false;
     }
-    
+
     public boolean isReproduccionAleatoria() {
         return reproduccionAleatoria;
     }

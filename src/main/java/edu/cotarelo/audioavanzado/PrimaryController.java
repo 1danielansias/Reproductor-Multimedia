@@ -1,17 +1,12 @@
 package edu.cotarelo.audioavanzado;
 
-import Model.Audio;
-import Model.Multimedia;
 import Model.Reproductor;
 import Model.ReproductorException;
-import Model.Video;
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.Slider;
@@ -19,13 +14,13 @@ import javafx.scene.input.DragEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.media.MediaView;
-import javafx.scene.paint.Color;
 import javafx.stage.FileChooser;
-import javafx.util.Duration;
 
 public class PrimaryController {
 
     private Reproductor reproductor;
+
+    private boolean aleatorioActivado;
 
     @FXML
     private ListView<String> listView;
@@ -48,77 +43,69 @@ public class PrimaryController {
     @FXML
     private HBox videoContainer;
 
-    public PrimaryController() {
+    @FXML
+    public void initialize() {
         reproductor = new Reproductor();
+        reproductor.setMediaView(mediaView);
+        aleatorioActivado = false;
     }
 
     @FXML
     void chooseMedia(MouseEvent event) {
-        // Elección de fichero
         FileChooser fileChooser = new FileChooser();
+        FileChooser.ExtensionFilter audioFilter
+                = new FileChooser.ExtensionFilter(".mp3, .wav", "*.mp3", "*.wav");
+        FileChooser.ExtensionFilter videoFilter
+                = new FileChooser.ExtensionFilter(".mp4, .mov", "*.mp4", "*.mov");
+        fileChooser.getExtensionFilters().addAll(audioFilter, videoFilter);
         fileChooser.setTitle("Selecciona un archivo multimedia");
+
         List<File> selectedFiles = fileChooser.showOpenMultipleDialog(null);
 
-        // Comprobaciones
-        if (selectedFiles != null && !selectedFiles.isEmpty()) {
-            for (File file : selectedFiles) {
-                // Comprobar si es un archivo de audio o video
-                String extension = obtenerExtension(file.getName());
-                if (extension != null && (extension.equalsIgnoreCase("mp3") || extension.equalsIgnoreCase("wav"))) {
-                    // Es un archivo de audio
-                    Audio audio = new Audio(file.getName(), file.getPath(), extension);
-                    reproductor.agregarArchivo(audio);
-                } else if (extension != null && (extension.equalsIgnoreCase("mp4") || extension.equalsIgnoreCase("mov"))) {
-                    // Es un archivo de video
-                    Video video = new Video(file.getName(), file.getPath(), extension);
-                    reproductor.agregarArchivo(video);
-                } else {
-                    mostrarMensajeError("El archivo seleccionado no es compatible.");
-                }
-            }
-        } else {
-            mostrarMensajeError("Seleccione un archivo válido.");
+        for (File selectedMedia : selectedFiles) {
+            reproductor.agregarArchivo(selectedMedia);
         }
+        cargarListView();
+        reproductor.prepare();
     }
 
     @FXML
     void pause(MouseEvent event) {
-        reproductor.pausar();
+
     }
 
     @FXML
     void play(MouseEvent event) {
         try {
-            reproductor.reproducir(archivoSeleccionado());
+            reproductor.play(false, aleatorioActivado, false);
         } catch (ReproductorException ex) {
-            ex.printStackTrace();
+            ventanaError("No se pudo obtener el multimedia para reproducir.");
         }
     }
 
     @FXML
     void stop(MouseEvent event) {
-        reproductor.detener();
+
     }
 
     @FXML
     void previous(MouseEvent event) {
         try {
-            reproductor.anterior();
+            reproductor.play(false, aleatorioActivado, true);
         } catch (ReproductorException ex) {
-            ex.printStackTrace();
+            ventanaError("No se pudo obtener el multimedia para reproducir.");
         }
     }
 
     @FXML
     void next(MouseEvent event) {
         try {
-            reproductor.siguiente();
+            reproductor.play(true, aleatorioActivado, false);
         } catch (ReproductorException ex) {
-            ex.printStackTrace();
+            ventanaError("No se pudo obtener el multimedia para reproducir.");
         }
     }
 
-    // Método para manejar el evento onDragOver del ListView
     @FXML
     void onListViewDragOver(DragEvent event) {
     }
@@ -134,68 +121,28 @@ public class PrimaryController {
     @FXML
     void deleteMedia(MouseEvent event) {
     }
-    
+
     /**
-     * Método para obtener el archivo multimedia seleccionado en la lista
-     * 
-     * @return Fichero seleccionado.
+     * Carga los nombre de los elementos de la lista de reproducción al listView
+     * de la interfaz de usuario.
      */
-    private Multimedia archivoSeleccionado() {
-        String nombreArchivo = listView.getSelectionModel().getSelectedItem();
-        if (nombreArchivo != null) {
-            ArrayList<Multimedia> archivos = reproductor.getLista();
-            for (Multimedia multimedia : archivos) {
-                if (multimedia.getNombre().equals(nombreArchivo)) {
-                    return multimedia;
-                }
-            }
+    private void cargarListView() {
+        listView.getItems().clear();
+        for (int i = 0; i < reproductor.getLista().size(); i++) {
+            listView.getItems().add(reproductor.getLista().get(i).getNombre());
         }
-        return null;
     }
 
     /**
-     * Devuelve la extensión de un archivo.
-     *
-     * @param nombreArchivo Nombre del archivo.
-     * @return Extensión del archivo.
-     */
-    private String obtenerExtension(String nombreArchivo) {
-        int index = nombreArchivo.lastIndexOf('.');
-        if (index > 0 && index < nombreArchivo.length() - 1) {
-            return nombreArchivo.substring(index + 1).toLowerCase();
-        }
-        return null;
-    }
-
-    /**
-     * Muestra un mensaje de error durante 1 segundo.
+     * Muestra una ventana con un mensaje de error.
      *
      * @param mensaje Mensaje de error.
      */
-    private void mostrarMensajeError(String mensaje) {
-        labelInfo.setText(mensaje);
-        labelInfo.setTextFill(Color.RED);
-        Timeline timeline = new Timeline(new KeyFrame(Duration.seconds(2), (ActionEvent event) -> {
-            labelInfo.setText("");
-            labelInfo.setTextFill(Color.web("#ffffff"));
-        }));
-        timeline.setCycleCount(1);
-        timeline.play();
+    private void ventanaError(String mensaje) {
+        Alert alert = new Alert(AlertType.ERROR);
+        alert.setTitle("Error");
+        alert.setHeaderText(null);
+        alert.setContentText(mensaje);
+        alert.showAndWait();
     }
-
-    /**
-     * Comprueba si un fichero ya existe dentro del ListView.
-     *
-     * @param nombreFichero Nombre del fichero.
-     * @return True si existe, false si no.
-     */
-    private boolean comprobarListView(String nombreFichero) {
-        for (String nombre : listView.getItems()) {
-            if (nombre.equals(nombreFichero)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
 }

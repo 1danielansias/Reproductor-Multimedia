@@ -94,7 +94,7 @@
       </VBox>
    </center>
    <left>
-      <VBox alignment="CENTER" prefHeight="600.0" prefWidth="160.0" styleClass="backgroundColor" BorderPane.alignment="CENTER">
+      <VBox alignment="CENTER" prefHeight="600.0" prefWidth="182.0" styleClass="backgroundColor" BorderPane.alignment="CENTER">
          <children>
             <Label alignment="CENTER" text="Lista de medios">
                <font>
@@ -104,7 +104,7 @@
                   <Insets top="10.0" />
                </VBox.margin>
             </Label>
-            <ListView fx:id="listView" onDragDropped="#onListViewDragDropped" onDragExited="#onListViewDragExited" onDragOver="#onListViewDragOver" onKeyPressed="#deleteMedia" prefHeight="552.0" prefWidth="160.0" styleClass="backgroundColor" VBox.vgrow="ALWAYS" />
+            <ListView fx:id="listView" onDragDropped="#onListViewDragDropped" onDragExited="#onListViewDragExited" onDragOver="#onListViewDragOver" onKeyPressed="#deleteMedia" prefHeight="531.0" prefWidth="183.0" styleClass="backgroundColor" VBox.vgrow="ALWAYS" />
             <FontAwesomeIcon iconName="TRASH" onMouseClicked="#deleteMedia" size="2em">
                <VBox.margin>
                   <Insets bottom="10.0" />
