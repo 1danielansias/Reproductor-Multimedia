@@ -76,12 +76,22 @@ public class ListaArchivos {
         return listaArchivos.get((archivoActual - 1) % listaArchivos.size());
     }
 
-    public Multimedia getRandom() {
+    public Multimedia getRandom(int archivoActual) {
         if (listaArchivos.isEmpty()) {
             return null;
         }
+        
+        if (listaArchivos.size() == 1) {
+            return listaArchivos.get(0);
+        }
+        
         Random random = new Random();
-        int index = random.nextInt(listaArchivos.size());
+        int index;
+        
+        do {
+            index = random.nextInt(listaArchivos.size());
+        } while (index == archivoActual);
+
         return listaArchivos.get(index);
     }
 

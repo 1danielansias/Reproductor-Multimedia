@@ -21,19 +21,13 @@ public class FileChooserHandler {
             for (File selectedMedia : selectedFiles) {
                 reproductor.agregarArchivo(selectedMedia);
             }
-            if (!"PLAYING".equals(reproductor.getStatus())) {
-                try {
-                    reproductor.play(false, aleatorioActivado, false);
-                } catch (ReproductorException ex) {
-                    return false;
-                }
-            }
+            reproductor.play();
             return true;
         } else {
             return false;
         }
     }
-    
+
     private static List<File> getFiles(Stage stage) {
         FileChooser fileChooser = new FileChooser();
         FileChooser.ExtensionFilter audioFilter

@@ -5,6 +5,7 @@ import Model.Reproductor;
 import Model.ReproductorException;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
@@ -14,6 +15,7 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.Slider;
 import javafx.scene.input.DragEvent;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.input.TransferMode;
 import javafx.scene.layout.HBox;
 import javafx.scene.media.MediaView;
 import javafx.stage.Stage;
@@ -52,6 +54,7 @@ public class PrimaryController {
     public void initialize() {
         reproductor = new Reproductor();
         reproductor.setMediaView(mediaView);
+        reproductor.setListView(listView);
         aleatorioActivado = false;
         aleatorioCheck.selectedProperty().addListener(new ChangeListener<Boolean>() {
             @Override
@@ -64,6 +67,15 @@ public class PrimaryController {
                     reproductor.desactivarReproduccionAleatoria();
                 }
             }
+        });
+        sliderDuracion.valueProperty().addListener((observable, oldValue, newValue) -> {
+            if (!sliderDuracion.isValueChanging()) {
+                reproductor.actualizarDuracion(newValue.doubleValue(), sliderDuracion);
+            }
+        });
+
+        sliderVolumen.valueProperty().addListener((observable, oldValue, newValue) -> {
+            reproductor.actualizarVolumen(newValue.doubleValue() / 100.0, sliderVolumen);
         });
     }
 
@@ -95,7 +107,7 @@ public class PrimaryController {
         try {
             reproductor.play(false, aleatorioActivado, false);
         } catch (ReproductorException ex) {
-            ventanaError("No se pudo obtener el multimedia para reproducir.");
+            ventanaError(ex.getMessage());
         }
     }
 
@@ -104,7 +116,7 @@ public class PrimaryController {
         try {
             reproductor.play(false, aleatorioActivado, true);
         } catch (ReproductorException ex) {
-            ventanaError("No se pudo obtener el multimedia para reproducir.");
+            ventanaError(ex.getMessage());
         }
     }
 
@@ -113,20 +125,43 @@ public class PrimaryController {
         try {
             reproductor.play(true, aleatorioActivado, false);
         } catch (ReproductorException ex) {
-            ventanaError("No se pudo obtener el multimedia para reproducir.");
+            ventanaError(ex.getMessage());
         }
     }
 
     @FXML
     void onListViewDragOver(DragEvent event) {
+        if (event.getGestureSource() != listView && event.getDragboard().hasFiles()) {
+            event.acceptTransferModes(TransferMode.COPY_OR_MOVE);
+            listView.setStyle("-fx-border-color: linear-gradient(to right,#61D8DE, #E839F6); -fx-border-width: 2px;");
+        }
+        event.consume();
     }
 
     @FXML
     void onListViewDragExited(DragEvent event) {
+        listView.setStyle("-fx-border-color: transparent;");
+        event.consume();
     }
 
     @FXML
     void onListViewDragDropped(DragEvent event) {
+        var db = event.getDragboard();
+        boolean exito = false;
+        if (db.hasFiles()) {
+            for (var file : db.getFiles()) {
+                reproductor.agregarArchivo(file);
+            }
+            cargarListView();
+            try {
+                reproductor.play();
+            } catch (ReproductorException ex) {
+                ventanaError(ex.getMessage());
+            }
+            exito = true;
+        }
+        event.setDropCompleted(exito);
+        event.consume();
     }
 
     @FXML
@@ -155,12 +190,26 @@ public class PrimaryController {
 
     /**
      * Carga los nombre de los elementos de la lista de reproducción al listView
-     * de la interfaz de usuario.
+     * de la interfaz de usuario. Añade también un Listener para Click a cada
+     * elemento.
      */
     private void cargarListView() {
         listView.getItems().clear();
         for (int i = 0; i < reproductor.getLista().size(); i++) {
             listView.getItems().add(reproductor.getLista().get(i).getNombre());
+            listView.setOnMouseClicked(new EventHandler<MouseEvent>() {
+                @Override
+                public void handle(MouseEvent click) {
+                    if (click.getClickCount() == 2) {
+                        try {
+                            reproductor.setArchivoCargadoIndex(listView.getSelectionModel().getSelectedIndex());
+                            reproductor.play(false, false, false);
+                        } catch (ReproductorException ex) {
+                            ventanaError(ex.getMessage());
+                        }
+                    }
+                }
+            });
         }
     }
 
