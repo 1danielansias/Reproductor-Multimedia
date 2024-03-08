@@ -67,6 +67,7 @@ public class Reproductor {
      * @throws ReproductorException Excepcion al cargar el media a reproducir.
      */
     public void play(boolean next, boolean aleatorio, boolean previous) throws ReproductorException {
+        prepare();
         Multimedia multimedia = getMultimedia(next, aleatorio, previous);
         if (multimedia != null) {
             if (status.equals("PAUSED") && !next) {
@@ -187,12 +188,29 @@ public class Reproductor {
     }
 
     /**
-     * Elimina un archivo de la lista multimedia.
+     * Elimina un archivo de la lista de reproducción.
      *
-     * @param multimedia El multimedia a eliminar.
+     * @param index Indice del archivo a eliminar.
+     * @return True si se eliminó correctamente, false si no.
+     * @throws ReproductorException ReproductorException Excepcion si no se ha
+     * seleccionado ningún archivo para eliminar.
      */
-    public void eliminarArchivo(Multimedia multimedia) {
-        listaArchivos.eliminarArchivo(multimedia);
+    public boolean eliminarArchivo(int index) throws ReproductorException {
+        if (index != -1) {
+            if (index != archivoCargadoIndex) {
+                Multimedia mediaSeleccionado = this.getLista().get(index);
+                listaArchivos.eliminarArchivo(mediaSeleccionado);
+                // Ajustar los indices después de eliminar
+                if (archivoCargadoIndex > index) {
+                    archivoCargadoIndex--;
+                }
+                return true;
+            } else {
+                return false;
+            }
+        } else {
+            throw new ReproductorException("Ningún archivo seleccionado para eliminar");
+        }
     }
 
     /**
