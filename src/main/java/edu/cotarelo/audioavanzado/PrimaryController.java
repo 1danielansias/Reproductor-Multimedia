@@ -3,10 +3,13 @@ package edu.cotarelo.audioavanzado;
 import Model.FileChooserHandler;
 import Model.Reproductor;
 import Model.ReproductorException;
+import java.util.concurrent.Callable;
+import javafx.beans.binding.Bindings;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
+import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.CheckBox;
@@ -16,15 +19,12 @@ import javafx.scene.control.Slider;
 import javafx.scene.input.DragEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.TransferMode;
-import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.scene.media.MediaView;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 
 public class PrimaryController {
-
-    private Reproductor reproductor;
-
-    private boolean aleatorioActivado;
 
     @FXML
     private CheckBox aleatorioCheck;
@@ -33,7 +33,10 @@ public class PrimaryController {
     private ListView<String> listView;
 
     @FXML
-    private Label infoDuracion;
+    private Label currentTimeLabel;
+    
+    @FXML
+    private Label totalTimeLabel;
 
     @FXML
     private Label labelInfo;
@@ -48,13 +51,21 @@ public class PrimaryController {
     private Slider sliderVolumen;
 
     @FXML
-    private HBox videoContainer;
+    private VBox vBoxControles;
+    
+    @FXML
+    private VBox container;
+    
+    private Reproductor reproductor;
+
+    private boolean aleatorioActivado;
 
     @FXML
     public void initialize() {
         reproductor = new Reproductor();
         reproductor.setMediaView(mediaView);
         reproductor.setListView(listView);
+        reproductor.setSliderVolumen(sliderVolumen);
         aleatorioActivado = false;
         aleatorioCheck.selectedProperty().addListener(new ChangeListener<Boolean>() {
             @Override
@@ -68,14 +79,14 @@ public class PrimaryController {
                 }
             }
         });
-        sliderDuracion.valueProperty().addListener((observable, oldValue, newValue) -> {
-            if (!sliderDuracion.isValueChanging()) {
-                reproductor.actualizarDuracion(newValue.doubleValue(), sliderDuracion);
+        container.sceneProperty().addListener(new ChangeListener<Scene>() {
+            @Override
+            public void changed(ObservableValue<? extends Scene> observableValue, Scene scene, Scene newScene) {
+                if (scene == null && newScene != null) {
+                    mediaView.fitHeightProperty().bind(newScene.heightProperty().subtract(vBoxControles.heightProperty().add(60)));
+                    mediaView.fitWidthProperty().bind(newScene.widthProperty());
+                }
             }
-        });
-
-        sliderVolumen.valueProperty().addListener((observable, oldValue, newValue) -> {
-            reproductor.actualizarVolumen(newValue.doubleValue() / 100.0, sliderVolumen);
         });
     }
 
@@ -84,6 +95,7 @@ public class PrimaryController {
         try {
             if (FileChooserHandler.selectAndPlayMedia(getStage(), reproductor, aleatorioActivado)) {
                 cargarListView();
+                setup();
             } else {
                 ventanaError("Por favor, seleccione un archivo/s para reproducir.");
             }
@@ -95,17 +107,20 @@ public class PrimaryController {
     @FXML
     void pause(MouseEvent event) {
         reproductor.pause();
+        setup();
     }
 
     @FXML
     void stop(MouseEvent event) {
         reproductor.stop();
+        setup();
     }
 
     @FXML
     void play(MouseEvent event) {
         try {
             reproductor.play(false, aleatorioActivado, false);
+            setup();
         } catch (ReproductorException ex) {
             ventanaError(ex.getMessage());
         }
@@ -115,6 +130,7 @@ public class PrimaryController {
     void previous(MouseEvent event) {
         try {
             reproductor.play(false, aleatorioActivado, true);
+            setup();
         } catch (ReproductorException ex) {
             ventanaError(ex.getMessage());
         }
@@ -124,6 +140,7 @@ public class PrimaryController {
     void next(MouseEvent event) {
         try {
             reproductor.play(true, aleatorioActivado, false);
+            setup();
         } catch (ReproductorException ex) {
             ventanaError(ex.getMessage());
         }
@@ -155,6 +172,7 @@ public class PrimaryController {
             cargarListView();
             try {
                 reproductor.play();
+                setup();
             } catch (ReproductorException ex) {
                 ventanaError(ex.getMessage());
             }
@@ -180,9 +198,9 @@ public class PrimaryController {
     }
 
     /**
-     * Recupera la escena de la vista.
+     * Recupera el escenario de la vista.
      *
-     * @return La escena.
+     * @return El escenario.
      */
     private Stage getStage() {
         return (Stage) listView.getScene().getWindow();
@@ -211,6 +229,73 @@ public class PrimaryController {
                 }
             });
         }
+    }
+    
+    private void setup() {
+        bindCurrentTimeLabel();
+        bindTotalTimeLabel();
+        labelInfo.setText("Reproduciendo: " + reproductor.getLista().get(reproductor.getArchivoCargadoIndex()).getNombre());
+    }
+    
+    /**
+     * 
+     */
+    private void bindCurrentTimeLabel() {
+        // Establecer el valor del valor actual de duracion 
+        currentTimeLabel.textProperty().bind(Bindings.createStringBinding(new Callable<String>() {
+            @Override
+            public String call() throws Exception {
+                return reproductor.getTime(reproductor.getMediaPlayer().getCurrentTime()) + " / ";
+            } 
+        }, reproductor.getMediaPlayer().currentTimeProperty()));
+    }
+    
+    /**
+     * 
+     */
+    private void bindTotalTimeLabel() {
+        // Establecer label de duración total
+        reproductor.getMediaPlayer().totalDurationProperty().addListener(new ChangeListener<Duration>() {
+            @Override
+            public void changed(ObservableValue<? extends Duration> observable, Duration oldValue, Duration newValue) {
+                sliderDuracion.setMax(newValue.toSeconds());
+                totalTimeLabel.setText(reproductor.getTime(newValue));
+            }
+        });
+        
+        // Establecer evento de drag and drop del slider de tiempo
+        sliderDuracion.valueChangingProperty().addListener(new ChangeListener<Boolean>() {
+            @Override
+            public void changed(ObservableValue<? extends Boolean> observable, Boolean wasChanging, Boolean isChanging) {
+                bindCurrentTimeLabel();
+                if (!isChanging) {
+                    reproductor.getMediaPlayer().seek(Duration.seconds(sliderDuracion.getValue()));
+                }
+            }
+        });
+        
+        // Establecer listener de movimiento del slider de tiempo
+        sliderDuracion.valueProperty().addListener(new ChangeListener<Number>() {
+            @Override
+            public void changed(ObservableValue<? extends Number> observableValue, Number oldValue, Number newValue) {
+                bindCurrentTimeLabel();
+                // Get the current time of the video in seconds.
+                double currentTime = reproductor.getMediaPlayer().getCurrentTime().toSeconds();
+                if (Math.abs(currentTime - newValue.doubleValue()) > 0.5) {
+                    reproductor.getMediaPlayer().seek(Duration.seconds(newValue.doubleValue()));
+                }
+            }
+        });
+        
+        reproductor.getMediaPlayer().currentTimeProperty().addListener(new ChangeListener<Duration>() {
+            @Override
+            public void changed(ObservableValue<? extends Duration> observableValue, Duration oldTime, Duration newTime) {
+                bindCurrentTimeLabel();
+                if (!sliderDuracion.isValueChanging()) {
+                    sliderDuracion.setValue(newTime.toSeconds());
+                }
+            }
+        });
     }
 
     /**

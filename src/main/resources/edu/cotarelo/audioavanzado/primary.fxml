@@ -17,42 +17,56 @@
 
 <BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" prefWidth="900.0" stylesheets="@styles.css" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="edu.cotarelo.audioavanzado.PrimaryController">
    <center>
-      <VBox alignment="CENTER" prefHeight="537.0" prefWidth="668.0" BorderPane.alignment="CENTER">
+      <VBox fx:id="container" alignment="CENTER" prefHeight="537.0" prefWidth="668.0" BorderPane.alignment="CENTER">
          <children>
             <HBox alignment="CENTER" prefHeight="72.0" prefWidth="740.0" VBox.vgrow="ALWAYS">
                <children>
                   <Label alignment="CENTER" styleClass="title" text="myTube" />
                </children>
             </HBox>
-            <HBox fx:id="videoContainer" alignment="CENTER" prefHeight="100.0" prefWidth="200.0" VBox.vgrow="ALWAYS">
+            <HBox alignment="CENTER" prefHeight="100.0" prefWidth="200.0" VBox.vgrow="ALWAYS">
                <children>
-                  <MediaView fx:id="mediaView" fitHeight="300.0" fitWidth="600.0" />
+                  <MediaView fx:id="mediaView" fitHeight="300.0" fitWidth="650.0" />
                </children>
             </HBox>
-            <VBox prefHeight="181.0" prefWidth="740.0" VBox.vgrow="ALWAYS">
+            <VBox fx:id="vBoxControles" prefHeight="181.0" prefWidth="740.0" VBox.vgrow="ALWAYS">
                <children>
-                  <HBox alignment="CENTER" prefHeight="69.0" prefWidth="900.0">
+                  <HBox alignment="CENTER" prefHeight="30.0" prefWidth="900.0" VBox.vgrow="ALWAYS">
                      <children>
-                        <VBox alignment="CENTER" prefHeight="55.0" prefWidth="1404.0">
-                           <children>
-                              <Slider fx:id="sliderDuracion" prefHeight="24.0" prefWidth="5.0">
-                                 <VBox.margin>
-                                    <Insets left="100.0" right="60.0" top="18.0" />
-                                 </VBox.margin>
-                              </Slider>
-                              <Label fx:id="infoDuracion" alignment="TOP_CENTER" prefHeight="17.0" prefWidth="256.0" styleClass="info2" text="00:00" />
-                           </children>
-                        </VBox>
-                        <ImageView fitHeight="25.0" fitWidth="25.0" pickOnBounds="true" preserveRatio="true">
-                           <image>
-                              <Image url="@volumen.png" />
-                           </image>
-                        </ImageView>
-                        <Slider fx:id="sliderVolumen" prefHeight="62.0" prefWidth="401.0" value="1.0">
+                        <Slider fx:id="sliderDuracion" prefHeight="50.0" prefWidth="350.0" value="1.0">
                            <HBox.margin>
-                              <Insets left="15.0" right="80.0" />
+                              <Insets />
                            </HBox.margin>
                         </Slider>
+                        <ImageView fitHeight="25.0" fitWidth="25.0" pickOnBounds="true" preserveRatio="true">
+                           <image>
+                              <Image url="@img/volumen.png" />
+                           </image>
+                           <HBox.margin>
+                              <Insets left="75.0" right="10.0" />
+                           </HBox.margin>
+                        </ImageView>
+                        <Slider fx:id="sliderVolumen" max="1.0" prefHeight="60.0" prefWidth="125.0" />
+                     </children>
+                     <padding>
+                        <Insets top="10.0" />
+                     </padding>
+                  </HBox>
+                  <HBox alignment="TOP_CENTER" prefHeight="40.0" prefWidth="200.0">
+                     <children>
+                        <Label fx:id="currentTimeLabel" alignment="CENTER" styleClass="info2" text="00:00">
+                           <padding>
+                              <Insets right="1.0" />
+                           </padding>
+                        </Label>
+                        <Label fx:id="totalTimeLabel" styleClass="info2" text="00:00">
+                           <HBox.margin>
+                              <Insets />
+                           </HBox.margin>
+                           <padding>
+                              <Insets right="210.0" />
+                           </padding>
+                        </Label>
                      </children>
                   </HBox>
                   <HBox alignment="CENTER" onMouseClicked="#pause" prefHeight="70.0" prefWidth="900.0" spacing="30.0">
@@ -87,7 +101,7 @@
                   </HBox>
                   <HBox alignment="CENTER" prefHeight="49.0" prefWidth="740.0">
                      <children>
-                        <Label fx:id="labelInfo" styleClass="info" />
+                        <Label fx:id="labelInfo" styleClass="info" text="Información" />
                      </children>
                   </HBox>
                </children>
@@ -96,7 +110,7 @@
       </VBox>
    </center>
    <left>
-      <VBox alignment="CENTER" prefHeight="600.0" prefWidth="182.0" styleClass="backgroundColor" BorderPane.alignment="CENTER">
+      <VBox alignment="CENTER" prefHeight="600.0" prefWidth="190.0" styleClass="backgroundColor" BorderPane.alignment="CENTER">
          <children>
             <Label alignment="CENTER" text="Lista de medios">
                <font>
@@ -106,7 +120,7 @@
                   <Insets top="10.0" />
                </VBox.margin>
             </Label>
-            <ListView fx:id="listView" onDragDropped="#onListViewDragDropped" onDragExited="#onListViewDragExited" onDragOver="#onListViewDragOver" onKeyPressed="#deleteMedia" prefHeight="531.0" prefWidth="183.0" styleClass="backgroundColor" VBox.vgrow="ALWAYS" />
+            <ListView fx:id="listView" onDragDropped="#onListViewDragDropped" onDragExited="#onListViewDragExited" onDragOver="#onListViewDragOver" onKeyPressed="#deleteMedia" prefHeight="531.0" prefWidth="190.0" styleClass="backgroundColor" VBox.vgrow="ALWAYS" />
             <FontAwesomeIcon iconName="TRASH" onMouseClicked="#deleteMedia" size="2em">
                <VBox.margin>
                   <Insets bottom="10.0" />

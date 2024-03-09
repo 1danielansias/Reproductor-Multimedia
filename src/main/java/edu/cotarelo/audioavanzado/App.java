@@ -21,7 +21,7 @@ public class App extends Application {
     public void start(Stage stage) throws IOException {
         scene = new Scene(loadFXML("primary"), 900, 600);
         stage.setScene(scene);
-        Image icon = new Image(getClass().getResourceAsStream("/edu/cotarelo/audioavanzado/logo_1.png"));
+        Image icon = new Image(getClass().getResourceAsStream("/edu/cotarelo/audioavanzado/img/logo_1.png"));
         stage.getIcons().add(icon);
         stage.setTitle("Reproductor multimedia");
         stage.show();

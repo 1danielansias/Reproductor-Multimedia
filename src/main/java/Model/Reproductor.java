@@ -2,6 +2,7 @@ package Model;
 
 import java.io.File;
 import java.util.ArrayList;
+import javafx.fxml.FXML;
 import javafx.scene.control.ListView;
 import javafx.scene.control.Slider;
 import javafx.scene.media.Media;
@@ -20,6 +21,7 @@ public class Reproductor {
     private MediaPlayer mediaPlayer;
     private MediaView mediaView;
     private ListView listView;
+    private Slider sliderVolumen;
     private int archivoCargadoIndex;
     private boolean reproduccionAleatoria;
     private String status;
@@ -39,6 +41,10 @@ public class Reproductor {
         return archivoCargadoIndex;
     }
 
+    public MediaPlayer getMediaPlayer() {
+        return mediaPlayer;
+    }
+
     public void setArchivoCargadoIndex(int archivoCargadoIndex) {
         this.archivoCargadoIndex = archivoCargadoIndex;
     }
@@ -56,6 +62,10 @@ public class Reproductor {
         this.listView = listView;
     }
 
+    public void setSliderVolumen(Slider sliderVolumen) {
+        this.sliderVolumen = sliderVolumen;
+    }
+
     /**
      * Prepara el reproductor para la reproducción.
      *
@@ -68,6 +78,9 @@ public class Reproductor {
                 mediaPlayer.stop();
             }
             mediaPlayer = new MediaPlayer(media);
+            mediaPlayer.volumeProperty().bindBidirectional(sliderVolumen.valueProperty());
+            sliderVolumen.setValue(1);
+
             addMediaPlayerListeners();
             mediaView.setMediaPlayer(mediaPlayer);
             // actualizar índice actual
@@ -96,7 +109,7 @@ public class Reproductor {
                 Multimedia multimedia = getMultimedia(next, aleatorio, previous);
                 prepare(multimedia);
                 if (status.equals("READY")) {
-                    mediaPlayer.play();                   
+                    mediaPlayer.play();
                 }
             }
             status = "PLAYING";
@@ -106,15 +119,17 @@ public class Reproductor {
     }
 
     /**
-     * Reproduce el primer multimedia de la lista. Este método se utiliza cuando
-     * se cargan por primera vez archivos al reprodutor.
+     * Este método se utiliza cuando se cargan archivos al reprodutor.En caso de
+     * que este no tenga ningún media cargado, se reproducirá el primero.
      *
      * @throws ReproductorException Excepcion al cargar el media a reproducir.
      */
     public void play() throws ReproductorException {
+        // se cambia el indice del archivo cargado al primer archivo de la lista
         if (archivoCargadoIndex == -1) {
             archivoCargadoIndex = 0;
         }
+        // únicamente se reproduce si no hay ningún media reproduciendose.
         if (!"PLAYING".equals(status)) {
             try {
                 play(false, reproduccionAleatoria, false);
@@ -259,30 +274,35 @@ public class Reproductor {
     }
 
     /**
-     * Actualiza el volumen del MediaPlayer y el slider de volumen.
+     * Calcula las horas, minutos y segundos dada la duración de un media.
      *
-     * @param volumen El nuevo valor de volumen (entre 0 y 1).
-     * @param sliderVolumen El slider de volumen que se actualizará.
+     * @param time - La duración del video.
+     * @return String de las horas, minutos y segundos formateados.
      */
-    public void actualizarVolumen(double volumen, Slider sliderVolumen) {
-        if (mediaPlayer != null) {
-            mediaPlayer.setVolume(volumen);
-            sliderVolumen.setValue(volumen * 100.0);
-        }
-    }
+    public String getTime(Duration time) {
+        int horas = (int) time.toHours();
+        int minutos = (int) time.toMinutes();
+        int segundos = (int) time.toSeconds();
 
-    /**
-     * Actualiza la posición de reproducción del MediaPlayer y el slider de
-     * duración.
-     *
-     * @param duracion La nueva duración de reproducción (en segundos).
-     * @param sliderDuracion El slider de duración que se actualizará.
-     */
-    public void actualizarDuracion(double duracion, Slider sliderDuracion) {
-        if (mediaPlayer != null) {
-            Duration nuevaDuracion = mediaPlayer.getTotalDuration().multiply(duracion / 100.0);
-            mediaPlayer.seek(nuevaDuracion);
-            sliderDuracion.setValue(duracion);
+        if (segundos > 59) {
+            segundos = segundos % 60;
+        }
+        if (minutos > 59) {
+            minutos = minutos % 60;
+        }
+        if (horas > 59) {
+            horas = horas % 60;
+        }
+
+        if (horas > 0) {
+            return String.format("%d:%02d:%02d",
+                    horas,
+                    minutos,
+                    segundos);
+        } else {
+            return String.format("%02d:%02d",
+                    minutos,
+                    segundos);
         }
     }
 }
