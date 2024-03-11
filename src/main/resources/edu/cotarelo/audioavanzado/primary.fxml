@@ -101,7 +101,7 @@
                   </HBox>
                   <HBox alignment="CENTER" prefHeight="49.0" prefWidth="740.0">
                      <children>
-                        <Label fx:id="labelInfo" styleClass="info" text="Información" />
+                        <Label fx:id="labelInfo" styleClass="info" />
                      </children>
                   </HBox>
                </children>

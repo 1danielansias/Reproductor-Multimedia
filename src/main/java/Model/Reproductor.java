@@ -2,16 +2,14 @@ package Model;
 
 import java.io.File;
 import java.util.ArrayList;
-import javafx.fxml.FXML;
 import javafx.scene.control.ListView;
-import javafx.scene.control.Slider;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.scene.media.MediaView;
 import javafx.util.Duration;
 
 /**
- * Clase que gestiona los diferentes eventos de reproducción del reproductor.
+ * Clase que gestiona los diferentes eventos del reproductor.
  *
  * @author dansias
  */
@@ -21,7 +19,6 @@ public class Reproductor {
     private MediaPlayer mediaPlayer;
     private MediaView mediaView;
     private ListView listView;
-    private Slider sliderVolumen;
     private int archivoCargadoIndex;
     private boolean reproduccionAleatoria;
     private String status;
@@ -62,10 +59,6 @@ public class Reproductor {
         this.listView = listView;
     }
 
-    public void setSliderVolumen(Slider sliderVolumen) {
-        this.sliderVolumen = sliderVolumen;
-    }
-
     /**
      * Prepara el reproductor para la reproducción.
      *
@@ -78,11 +71,9 @@ public class Reproductor {
                 mediaPlayer.stop();
             }
             mediaPlayer = new MediaPlayer(media);
-            mediaPlayer.volumeProperty().bindBidirectional(sliderVolumen.valueProperty());
-            sliderVolumen.setValue(1);
-
             addMediaPlayerListeners();
             mediaView.setMediaPlayer(mediaPlayer);
+            
             // actualizar índice actual
             archivoCargadoIndex = listaArchivos.getLista().indexOf(multimedia);
             listView.getSelectionModel().select(archivoCargadoIndex);
@@ -103,6 +94,7 @@ public class Reproductor {
      */
     public void play(boolean next, boolean aleatorio, boolean previous) throws ReproductorException {
         if (!listaArchivos.getLista().isEmpty()) {
+            // en caso de que el reproductor esté pausado, simplemente se reanuda la reproducción.
             if (status.equals("PAUSED") && !next) {
                 mediaPlayer.play();
             } else {
@@ -119,7 +111,7 @@ public class Reproductor {
     }
 
     /**
-     * Este método se utiliza cuando se cargan archivos al reprodutor.En caso de
+     * Este método se utiliza cuando se cargan nuevos archivos al reprodutor. En caso de
      * que este no tenga ningún media cargado, se reproducirá el primero.
      *
      * @throws ReproductorException Excepcion al cargar el media a reproducir.
@@ -140,7 +132,7 @@ public class Reproductor {
     }
 
     /**
-     * Obtiene un Objeto Multimedia de la lista.
+     * Obtiene un Objeto Multimedia de la lista según los parámetros establecidos.
      *
      * @param next Siguiente activado.
      * @param aleatorio Aleatorio activado
@@ -186,6 +178,7 @@ public class Reproductor {
      * Añade diferentes Listeners para controlar el estado del MediaPlayer.
      */
     private void addMediaPlayerListeners() {
+        // listener que contola el comportamiento al finalizar la reproducción
         mediaPlayer.setOnEndOfMedia(() -> {
             if (reproduccionAleatoria) {
                 try {
@@ -211,7 +204,7 @@ public class Reproductor {
      *
      * @param file El archivo a añadir.
      */
-    public void agregarArchivo(File file) {
+    public void agregarArchivo(File file) throws ReproductorException {
         listaArchivos.agregarArchivo(file);
     }
 

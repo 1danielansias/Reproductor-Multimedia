@@ -34,7 +34,7 @@ public class PrimaryController {
 
     @FXML
     private Label currentTimeLabel;
-    
+
     @FXML
     private Label totalTimeLabel;
 
@@ -52,10 +52,10 @@ public class PrimaryController {
 
     @FXML
     private VBox vBoxControles;
-    
+
     @FXML
     private VBox container;
-    
+
     private Reproductor reproductor;
 
     private boolean aleatorioActivado;
@@ -65,8 +65,8 @@ public class PrimaryController {
         reproductor = new Reproductor();
         reproductor.setMediaView(mediaView);
         reproductor.setListView(listView);
-        reproductor.setSliderVolumen(sliderVolumen);
         aleatorioActivado = false;
+        // listener que controla el comportamiento al cambiar el estado del CheckBox de aleatorio
         aleatorioCheck.selectedProperty().addListener(new ChangeListener<Boolean>() {
             @Override
             public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
@@ -79,6 +79,7 @@ public class PrimaryController {
                 }
             }
         });
+        // listener que controla el redimensionamiento del MediaView al cambiar el tamaño de su contenedor
         container.sceneProperty().addListener(new ChangeListener<Scene>() {
             @Override
             public void changed(ObservableValue<? extends Scene> observableValue, Scene scene, Scene newScene) {
@@ -167,7 +168,11 @@ public class PrimaryController {
         boolean exito = false;
         if (db.hasFiles()) {
             for (var file : db.getFiles()) {
-                reproductor.agregarArchivo(file);
+                try {
+                    reproductor.agregarArchivo(file);
+                } catch (ReproductorException ex) {
+                    ventanaError(ex.getMessage());
+                }
             }
             cargarListView();
             try {
@@ -182,6 +187,11 @@ public class PrimaryController {
         event.consume();
     }
 
+    /**
+     * Elimina un media de la lista y actualiza el ListView.
+     *
+     * @param event Evento de click.
+     */
     @FXML
     void deleteMedia(MouseEvent event) {
         int selectedIndex = listView.getSelectionModel().getSelectedIndex();
@@ -207,9 +217,9 @@ public class PrimaryController {
     }
 
     /**
-     * Carga los nombre de los elementos de la lista de reproducción al listView
-     * de la interfaz de usuario. Añade también un Listener para Click a cada
-     * elemento.
+     * Carga los nombres de los elementos de la lista de reproducción al
+     * ListView de la interfaz de usuario. Añade también un Click Listener a
+     * cada elemento.
      */
     private void cargarListView() {
         listView.getItems().clear();
@@ -222,6 +232,7 @@ public class PrimaryController {
                         try {
                             reproductor.setArchivoCargadoIndex(listView.getSelectionModel().getSelectedIndex());
                             reproductor.play(false, false, false);
+                            setup();
                         } catch (ReproductorException ex) {
                             ventanaError(ex.getMessage());
                         }
@@ -230,31 +241,35 @@ public class PrimaryController {
             });
         }
     }
-    
+
+    /**
+     * Configura los labels, sliders de duración y volumen al cargar un nuevo media.
+     */
     private void setup() {
         bindCurrentTimeLabel();
         bindTotalTimeLabel();
+        reproductor.getMediaPlayer().volumeProperty().bindBidirectional(sliderVolumen.valueProperty());
+        sliderVolumen.setValue(1);
         labelInfo.setText("Reproduciendo: " + reproductor.getLista().get(reproductor.getArchivoCargadoIndex()).getNombre());
     }
-    
+
     /**
-     * 
+     * Configura el label del valor actual de la duración.
      */
     private void bindCurrentTimeLabel() {
-        // Establecer el valor del valor actual de duracion 
         currentTimeLabel.textProperty().bind(Bindings.createStringBinding(new Callable<String>() {
             @Override
             public String call() throws Exception {
                 return reproductor.getTime(reproductor.getMediaPlayer().getCurrentTime()) + " / ";
-            } 
+            }
         }, reproductor.getMediaPlayer().currentTimeProperty()));
     }
-    
+
     /**
-     * 
+     * Establece el valor del label de duración total y configura el evento de
+     * drag and drop del slider.
      */
     private void bindTotalTimeLabel() {
-        // Establecer label de duración total
         reproductor.getMediaPlayer().totalDurationProperty().addListener(new ChangeListener<Duration>() {
             @Override
             public void changed(ObservableValue<? extends Duration> observable, Duration oldValue, Duration newValue) {
@@ -262,8 +277,7 @@ public class PrimaryController {
                 totalTimeLabel.setText(reproductor.getTime(newValue));
             }
         });
-        
-        // Establecer evento de drag and drop del slider de tiempo
+
         sliderDuracion.valueChangingProperty().addListener(new ChangeListener<Boolean>() {
             @Override
             public void changed(ObservableValue<? extends Boolean> observable, Boolean wasChanging, Boolean isChanging) {
@@ -273,20 +287,18 @@ public class PrimaryController {
                 }
             }
         });
-        
-        // Establecer listener de movimiento del slider de tiempo
+
         sliderDuracion.valueProperty().addListener(new ChangeListener<Number>() {
             @Override
             public void changed(ObservableValue<? extends Number> observableValue, Number oldValue, Number newValue) {
                 bindCurrentTimeLabel();
-                // Get the current time of the video in seconds.
                 double currentTime = reproductor.getMediaPlayer().getCurrentTime().toSeconds();
                 if (Math.abs(currentTime - newValue.doubleValue()) > 0.5) {
                     reproductor.getMediaPlayer().seek(Duration.seconds(newValue.doubleValue()));
                 }
             }
         });
-        
+
         reproductor.getMediaPlayer().currentTimeProperty().addListener(new ChangeListener<Duration>() {
             @Override
             public void changed(ObservableValue<? extends Duration> observableValue, Duration oldTime, Duration newTime) {
