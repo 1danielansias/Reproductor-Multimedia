@@ -1,6 +1,6 @@
-# 🎬 MyTube (Java & JavaFX)
+# 🎬 PulsePlayer (Java & JavaFX)
 
-**MyTube** es una aplicación de **escritorio** para reproducir **vídeo y audio** (estilo YouTube) desarrollada con **Java 17** y **JavaFX**.  
+**PulsePlayer** es una aplicación de **escritorio** para reproducir **vídeo y audio** (estilo YouTube) desarrollada con **Java 17** y **JavaFX**.  
 Sigue una **arquitectura MVC** con una separación clara entre **vista (FXML/CSS)**, **controladores** y **modelo/capa de datos**, priorizando código mantenible y fácil de extender.
 
 ---
